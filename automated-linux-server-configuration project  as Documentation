@@ -1,0 +1,472 @@
+# DAY 5 – SESSION 5
+# Real-World Ansible Project Integration
+
+## 1. Project Overview
+
+**Project Name:** Automated Linux Server Configuration using Ansible
+
+**Objective:** Automate Linux server configuration across Development, Staging and Production environments using a common Ansible playbook.
+
+### Technologies Used
+
+- Ansible
+- AWS EC2
+- Ubuntu Linux
+- YAML
+- Jinja2
+- SSH
+- Nginx
+- UFW Firewall
+- Git and GitHub
+
+## 2. Project Architecture
+
+Ansible Control Machine connects to three AWS EC2 managed nodes through SSH.
+
+```text
+             ANSIBLE CONTROL MACHINE
+                    Ubuntu
+                      |
+                  SSH Connection
+                      |
+          +-----------+-----------+
+          |           |           |
+          v           v           v
+       DEV EC2    STAGING EC2   PROD EC2
+          |           |           |
+          +-----------+-----------+
+                      |
+                   site.yml
+                      |
+             Ansible Automation
+                      |
+          +-----------+-----------+
+          |           |           |
+       Packages    Users       Directories
+          |           |           |
+        Nginx     Templates    Firewall
+```
+
+## 3. Project Folder Structure
+
+```text
+automated-linux-server/
+│
+├── ansible.cfg
+├── .gitignore
+├── README.md
+│
+├── files/
+│   ├── app.conf
+│   └── default
+│
+├── inventory/
+│   ├── dev
+│   ├── staging
+│   ├── production
+│   ├── dev.example
+│   ├── staging.example
+│   ├── production.example
+│   │
+│   └── group_vars/
+│       ├── dev.yml
+│       ├── staging.yml
+│       └── production.yml
+│
+├── playbooks/
+│   ├── site.yml
+│   ├── firewall.yml
+│   ├── nginx-role.yml
+│   ├── nginx-config.yml
+│   ├── nginx-service.yml
+│   ├── files.yml
+│   ├── copy-file.yml
+│   ├── template-file.yml
+│   ├── variables.yml
+│   ├── handler.yml
+│   ├── server.yml
+│   └── enviroment.yml
+│
+├── roles/
+│   └── nginx/
+│       ├── defaults/main.yml
+│       ├── files/default
+│       ├── handlers/main.yml
+│       ├── tasks/main.yml
+│       └── vars/main.yml
+│
+└── templates/
+    └── app.conf.j2
+```
+
+## 4. Ansible Configuration
+
+File: `ansible.cfg`
+
+```ini
+[defaults]
+inventory = ./inventory/dev
+host_key_checking = False
+roles_path = ./roles
+```
+
+For the public GitHub version, the default inventory was changed to `inventory/dev.example` and host key checking enabled.
+
+## 5. Environment Variables
+
+### Development
+
+File: `inventory/group_vars/dev.yml`
+
+```yaml
+---
+app_name: task-management-app
+app_environment: development
+app_port: 8080
+app_debug: true
+```
+
+### Staging
+
+File: `inventory/group_vars/staging.yml`
+
+```yaml
+---
+app_name: task-management-app
+app_environment: staging
+app_port: 8081
+app_debug: true
+```
+
+### Production
+
+File: `inventory/group_vars/production.yml`
+
+```yaml
+---
+app_name: task-management-app
+app_environment: production
+app_port: 80
+app_debug: false
+```
+
+## 6. Jinja2 Template
+
+File: `templates/app.conf.j2`
+
+```jinja2
+Application Name: {{ app_name }}
+Environment: {{ app_environment }}
+Port: {{ app_port }}
+```
+
+The template generates environment-specific configuration using group variables.
+
+## 7. Nginx Role
+
+### Default variables
+
+File: `roles/nginx/defaults/main.yml`
+
+```yaml
+---
+nginx_package_name: nginx
+nginx_service_name: nginx
+nginx_service_enabled: true
+```
+
+### Role tasks
+
+File: `roles/nginx/tasks/main.yml`
+
+```yaml
+---
+- name: Install Nginx
+  become: true
+  ansible.builtin.apt:
+    name: "{{ nginx_package_name }}"
+    state: present
+    update_cache: true
+
+- name: Ensure Nginx is running and enabled
+  become: true
+  ansible.builtin.service:
+    name: "{{ nginx_service_name }}"
+    state: started
+    enabled: "{{ nginx_service_enabled }}"
+
+- name: Deploy Nginx configuration
+  become: true
+  ansible.builtin.copy:
+    src: default
+    dest: /etc/nginx/sites-available/default
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Reload Nginx
+```
+
+### Handler
+
+File: `roles/nginx/handlers/main.yml`
+
+```yaml
+---
+- name: Reload Nginx
+  become: true
+  ansible.builtin.service:
+    name: nginx
+    state: reloaded
+```
+
+## 8. Main Integrated Playbook
+
+File: `playbooks/site.yml`
+
+```yaml
+---
+- name: Automated Linux Server Configuration
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Display target server information
+      debug:
+        msg: "Configuring {{ inventory_hostname }}"
+
+    - name: Install required packages
+      ansible.builtin.apt:
+        name:
+          - nginx
+          - busybox
+          - ufw
+        state: present
+        update_cache: true
+
+    - name: Create the DevOps group
+      ansible.builtin.group:
+        name: devops
+        state: present
+
+    - name: Create a user
+      ansible.builtin.user:
+        name: devopsuser
+        group: devops
+        state: present
+        create_home: true
+        shell: /bin/bash
+
+    - name: Create application directory
+      ansible.builtin.file:
+        path: /opt/devops
+        state: directory
+        owner: devopsuser
+        group: devops
+        mode: '0755'
+
+    - name: Create application log file
+      ansible.builtin.copy:
+        content: ""
+        dest: /opt/devops/app.log
+        owner: devopsuser
+        group: devops
+        mode: '0644'
+
+    - name: Deploy environment-specific application configuration
+      ansible.builtin.template:
+        src: ../templates/app.conf.j2
+        dest: /opt/devops/app.conf
+        owner: devopsuser
+        group: devops
+        mode: '0644'
+
+    - name: Configure Nginx using reusable role
+      ansible.builtin.include_role:
+        name: nginx
+
+    - name: Allow SSH connection
+      community.general.ufw:
+        rule: allow
+        port: '22'
+        proto: tcp
+
+    - name: Allow HTTP connection
+      community.general.ufw:
+        rule: allow
+        port: '80'
+        proto: tcp
+
+    - name: Allow HTTPS connection
+      community.general.ufw:
+        rule: allow
+        port: '443'
+        proto: tcp
+
+    - name: Set default incoming policy
+      community.general.ufw:
+        direction: incoming
+        default: deny
+
+    - name: Set default outgoing policy
+      community.general.ufw:
+        direction: outgoing
+        default: allow
+
+    - name: Enable UFW firewall
+      community.general.ufw:
+        state: enabled
+```
+
+**Note:** This is the submitted, tested playbook structure. Nginx is installed both in the package task and in the Nginx role; the separate package entry is redundant. The role already handles Nginx installation.
+
+## 9. Deployment Commands
+
+Run commands from the project root directory.
+
+### Syntax validation
+
+```bash
+ansible-playbook --syntax-check playbooks/site.yml
+```
+
+### Deploy to Development
+
+```bash
+ansible-playbook -i inventory/dev playbooks/site.yml
+```
+
+### Deploy to Staging
+
+```bash
+ansible-playbook -i inventory/staging playbooks/site.yml
+```
+
+### Deploy to Production
+
+```bash
+ansible-playbook -i inventory/production playbooks/site.yml
+```
+
+## 10. Server Verification Commands
+
+### Check Nginx
+
+```bash
+sudo systemctl status nginx
+sudo nginx -t
+curl -I http://localhost
+```
+
+### Check firewall
+
+```bash
+sudo ufw status verbose
+```
+
+### Check user and group
+
+```bash
+id devopsuser
+getent group devops
+```
+
+### Check application files
+
+```bash
+ls -ld /opt/devops
+ls -l /opt/devops/
+cat /opt/devops/app.conf
+```
+
+## 11. Idempotency Testing
+
+Idempotency means repeatedly running the same playbook should not create unnecessary changes when the desired server configuration already exists.
+
+The project was tested across all three environments.
+
+| Environment | Tasks | Changed | Failed |
+|---|---:|---:|---:|
+| Development | 18 | 0 | 0 |
+| Staging | 18 | 0 | 0 |
+| Production | 18 | 0 | 0 |
+
+All three environments passed the final idempotency test.
+
+## 12. Git and GitHub Integration
+
+GitHub repository:
+
+https://github.com/Abis2001/automated-linux-server-configuration
+
+### Important `.gitignore`
+
+```gitignore
+inventory/dev
+inventory/staging
+inventory/production
+
+*.pem
+id_rsa
+id_ed25519
+
+*.retry
+__pycache__/
+*.pyc
+```
+
+Real inventories and private keys must remain outside the public repository.
+
+### Git commands used
+
+```bash
+git status
+
+git add .
+
+git diff --cached --check
+
+git commit -m "Initial commit: Ansible server automation project"
+
+git remote add origin https://github.com/Abis2001/automated-linux-server-configuration.git
+
+git push -u origin master
+```
+
+### Final verification
+
+```bash
+git status
+git log --oneline -1
+```
+
+Final result:
+
+```text
+On branch master
+nothing to commit, working tree clean
+
+f9bd86b (HEAD -> master, origin/master)
+Initial commit: Ansible server automation project
+```
+
+## 13. Project Completion Summary
+
+The project successfully brought together:
+
+- Multiple Ansible inventories.
+- Environment-specific group variables.
+- One common integrated playbook.
+- Linux package installation.
+- User and group management.
+- File and directory management.
+- Jinja2 templates.
+- Reusable Nginx role.
+- Handlers and notifications.
+- UFW firewall configuration.
+- Idempotency testing.
+- Git and GitHub version control.
+
+**Project Status:** Completed and pushed to GitHub.
+
+**GitHub:** https://github.com/Abis2001/automated-linux-server-configuration
