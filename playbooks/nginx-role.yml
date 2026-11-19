@@ -1,0 +1,7 @@
+ - name: Configure Nginx using Ansible Role
+   hosts: dev
+   become: true
+   gather_facts: false
+
+   roles:
+     - nginx 

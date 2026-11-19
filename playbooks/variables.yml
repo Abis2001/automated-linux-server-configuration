@@ -1,0 +1,18 @@
+---
+- name: Learn Ansible variables
+  hosts: dev
+
+  vars:
+    app_name: DevOps Project
+    app_environment: Production
+    app_port: 9090
+    app_directory: /opt/devops
+
+  tasks:
+    - name: Display application details
+      debug:
+        msg: "Application {{ app_name }} runs in {{ app_environment }} on port {{ app_port }}"
+
+    - name: Display application directory
+      debug:
+        msg: "Application directory is {{ app_directory }}"

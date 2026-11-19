@@ -1,0 +1,93 @@
+---
+- name: Automated Linux Server Configuration
+  hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Display target server information
+      debug:
+        msg: "Configuring {{ inventory_hostname }}"
+
+    - name: Install required packages
+      ansible.builtin.apt:
+        name:
+          - nginx
+          - busybox
+          - ufw
+        state: present
+        update_cache: true
+
+    - name: Creata a Devops Group
+      ansible.builtin.group:
+        name: devops
+        state: present
+
+    - name: Create a user
+      ansible.builtin.user:
+        name: devopsuser
+        group: devops
+        state: present
+        create_home: true
+        shell: /bin/bash
+
+    - name: Create application directory
+      ansible.builtin.file:
+        path: /opt/devops
+        state: directory
+        owner: devopsuser
+        group: devops
+        mode: '0755'
+
+    - name: Create application log file
+      ansible.builtin.copy:
+        content: ""
+        dest: /opt/devops/app.log
+        owner: devopsuser
+        group: devops
+        mode: '0644'
+
+    - name: Deploy environment-specific application configuration
+      ansible.builtin.template:
+        src: ../templates/app.conf.j2
+        dest: /opt/devops/app.conf
+        owner: devopsuser
+        group: devops
+        mode: '0644'
+
+    - name: Configure Nginx using reusable role
+      ansible.builtin.include_role:
+        name: nginx
+
+    - name: Allow SSH connection
+      community.general.ufw:
+        rule: allow
+        port: '22'
+        proto: tcp
+
+    - name: Allow HTTP connection
+      community.general.ufw:
+        rule: allow
+        port: '80'
+        proto: tcp
+
+    - name: Allow HTTPS connection
+      community.general.ufw:
+        rule: allow
+        port: '443'
+        proto: tcp
+
+    - name: set default incoming policy
+      community.general.ufw:
+        direction: incoming
+        default: deny
+
+    - name: set default outgoing policy
+      community.general.ufw:
+        direction: outgoing
+        default: allow
+
+    - name: enable Firewall is enabled
+      community.general.ufw:
+        state: enabled
+

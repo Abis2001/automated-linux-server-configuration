@@ -1,0 +1,13 @@
+---
+- name: Copy application configuration
+  hosts: dev
+  become: true
+
+  tasks:
+    - name: Copy app.conf to EC2
+      copy:
+        src: ../files/app.conf
+        dest: /opt/devops/app.conf
+        owner: devopsuser
+        group: devops
+        mode: '0644'

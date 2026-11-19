@@ -1,0 +1,26 @@
+#SPDX-License-Identifier: MIT-0
+---
+# tasks file for nginx
+- name: Install Nginx
+  become: true
+  ansible.builtin.apt:
+    name: "{{ nginx_package_name }}"
+    state: present
+    update_cache: true
+
+- name: Ensure Nginx is running and enabled
+  become: true
+  ansible.builtin.service:
+    name: "{{ nginx_service_name }}"
+    state: started
+    enabled: "{{ nginx_service_enabled }}"
+
+- name: Deploy Nginx configuration
+  become: true
+  ansible.builtin.copy:
+    src: default
+    dest: /etc/nginx/sites-available/default
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Reload Nginx

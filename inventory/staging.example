@@ -1,0 +1,2 @@
+[staging]
+staging_server ansible_host=YOUR_STAGING_PUBLIC_DNS ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/YOUR_STAGING_KEY.pem ansible_python_interpreter=/usr/bin/python3

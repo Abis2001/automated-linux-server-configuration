@@ -1,0 +1,20 @@
+---
+- name: Configure Nginx using handlers
+  hosts: dev
+  become: true
+
+  tasks:
+    - name: Deploy Nginx configuration
+      copy:
+        src: ../files/default
+        dest: /etc/nginx/sites-available/default
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Reload Nginx
+
+  handlers:
+    - name: Reload Nginx
+      service:
+        name: nginx
+        state: reloaded

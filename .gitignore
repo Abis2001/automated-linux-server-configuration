@@ -1,0 +1,16 @@
+# Real AWS inventories
+inventory/dev
+inventory/staging
+inventory/production
+
+# Private keys
+*.pem
+id_rsa
+id_ed25519
+
+# Ansible temporary files
+*.retry
+
+# Python cache
+__pycache__/
+*.pyc

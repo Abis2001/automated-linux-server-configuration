@@ -1,0 +1,5 @@
+---
+app_name: task-management-app
+app_environment: development
+app_port: 8080
+app_debug: true

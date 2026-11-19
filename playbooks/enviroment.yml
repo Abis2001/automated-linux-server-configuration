@@ -1,0 +1,13 @@
+---
+- name: Environment Based Configuration
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Display environment configuration
+      debug:
+        msg:
+          - "Application: {{ app_name }}"
+          - "Environment: {{ app_environment }}"
+          - "Port: {{ app_port }}"
+          - "Debug Mode: {{ app_debug }}"

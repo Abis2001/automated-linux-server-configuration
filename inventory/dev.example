@@ -1,0 +1,2 @@
+[dev]
+aws_server ansible_host=YOUR_DEV_PUBLIC_IP ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/YOUR_DEV_KEY.pem ansible_python_interpreter=/usr/bin/python3

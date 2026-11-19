@@ -1,0 +1,13 @@
+---
+- name: Manage files and directories
+  hosts: dev
+  become: true
+
+  tasks:
+    - name: Configure application log file
+      file:
+        path: /opt/devops/app.log
+        state: touch
+        owner: devopsuser
+        group: devops
+        mode: '0644'

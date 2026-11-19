@@ -1,0 +1,18 @@
+---
+- name: Deploy dynamic application configuration
+  hosts: dev
+  become: true
+
+  vars:
+    app_name: DevOps Project
+    app_environment: production
+    app_port: 9090
+
+  tasks:
+    - name: Deploy application template
+      template:
+        src: ../templates/app.conf.j2
+        dest: /opt/devops/app.conf
+        owner: devopsuser
+        group: devops
+        mode: '0644'

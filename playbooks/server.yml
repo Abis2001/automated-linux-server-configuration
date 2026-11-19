@@ -1,0 +1,27 @@
+
+---
+- name: adding user jenkins
+  hosts: dev
+  become: true
+  gather_facts: true
+
+
+  tasks:
+    - name: Install tree
+      apt:
+        name: tree
+        state: present
+        update_cache: yes
+
+    - name: Install busybox 
+      apt:
+        name: busybox
+        state: present
+        update_cache: yes
+
+
+    - name: Configuring the busybox
+      service:
+        name: busybox
+        state: started
+        enabled: yes

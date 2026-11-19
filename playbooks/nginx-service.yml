@@ -1,0 +1,13 @@
+---
+- name: Deploy Nginx configuration
+  hosts: dev
+  become: true
+
+  tasks:
+    - name: Copy Nginx configuration
+      copy:
+        src: ../files/default
+        dest: /etc/nginx/sites-available/default
+        owner: root
+        group: root
+        mode: '0644'
